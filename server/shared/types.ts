@@ -1253,6 +1253,10 @@ export type FileTreeNode = {
   permissions: string;
   permissionsRwx: string;
   isSymlink?: boolean;
+  // Set only when the listing was requested with `includeIgnored`: the entry is
+  // one the default listing hides (matched by `.gitignore`, or by the fallback
+  // directory names when there is none), directly or through an ignored parent.
+  isIgnored?: boolean;
   children?: FileTreeNode[];
 };
 
@@ -1395,9 +1399,12 @@ export type FileTreeServices = {
     path: string;
     message: string;
   }>;
+  // `includeIgnored` lists everything except the hard exclusions (`node_modules`,
+  // VCS metadata) and marks normally hidden entries with `isIgnored`; it takes
+  // precedence over `respectGitignore`.
   listProjectFiles(
     projectId: string,
-    options?: { respectGitignore: boolean },
+    options?: { respectGitignore: boolean; includeIgnored?: boolean },
   ): Promise<FileTreeNode[]>;
   createEntry(input: {
     projectId: string;

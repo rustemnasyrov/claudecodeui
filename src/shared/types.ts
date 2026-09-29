@@ -935,6 +935,9 @@ export type FileTreeNode = {
   size?: number;
   modified?: string;
   permissionsRwx?: string;
+  // Present only in listings requested with ignored files included: the entry is
+  // one the default listing hides (e.g. matched by `.gitignore`).
+  isIgnored?: boolean;
   children?: FileTreeNode[];
   [key: string]: unknown;
 };

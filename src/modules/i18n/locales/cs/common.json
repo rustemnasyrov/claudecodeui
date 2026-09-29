@@ -146,6 +146,8 @@
     "newFolder": "Nová složka (Cmd+Shift+N)",
     "refresh": "Obnovit",
     "collapseAll": "Sbalit vše",
+    "showIgnored": "Zobrazit soubory ignorované gitem",
+    "hideIgnored": "Skrýt soubory ignorované gitem",
     "dropToUpload": "Přetáhněte sem soubory k nahrání",
     "dropToUploadTo": "Přetáhněte sem soubory k nahrání do „{{folder}}“",
     "uploadingFiles": "Nahrávání souborů",

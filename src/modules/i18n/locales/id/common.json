@@ -122,6 +122,8 @@
     "newFolder": "Folder Baru (Cmd+Shift+N)",
     "refresh": "Segarkan",
     "collapseAll": "Ciutkan Semua",
+    "showIgnored": "Tampilkan file yang diabaikan git",
+    "hideIgnored": "Sembunyikan file yang diabaikan git",
     "context": {
       "rename": "Ganti Nama",
       "delete": "Hapus",

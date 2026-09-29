@@ -121,6 +121,8 @@
     "newFolder": "Nuova cartella (Cmd+Shift+N)",
     "refresh": "Aggiorna",
     "collapseAll": "Comprimi tutto",
+    "showIgnored": "Mostra i file ignorati da git",
+    "hideIgnored": "Nascondi i file ignorati da git",
     "context": {
       "rename": "Rinomina",
       "delete": "Elimina",

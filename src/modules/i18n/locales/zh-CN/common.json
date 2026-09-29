@@ -121,6 +121,8 @@
     "newFolder": "新建文件夹 (Cmd+Shift+N)",
     "refresh": "刷新",
     "collapseAll": "全部折叠",
+    "showIgnored": "显示被 git 忽略的文件",
+    "hideIgnored": "隐藏被 git 忽略的文件",
     "context": {
       "rename": "重命名",
       "delete": "删除",

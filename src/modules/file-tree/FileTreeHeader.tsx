@@ -1,6 +1,19 @@
 import { useRef } from 'react';
 import type { ChangeEvent } from 'react';
-import { ChevronDown, Eye, FileText, FolderPlus, List, Loader2, RefreshCw, Search, TableProperties, Upload, X } from 'lucide-react';
+import {
+  ChevronDown,
+  Eye,
+  FileText,
+  FolderGit2,
+  FolderPlus,
+  List,
+  Loader2,
+  RefreshCw,
+  Search,
+  TableProperties,
+  Upload,
+  X,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { Button, Input } from '@/shared/ui';
@@ -11,6 +24,9 @@ import type { FileTreeViewMode } from '@/shared/types';
 type FileTreeHeaderProps = {
   viewMode: FileTreeViewMode;
   onViewModeChange: (mode: FileTreeViewMode) => void;
+  // Whether git-ignored entries are listed; the toggle is hidden when no handler is given.
+  showIgnored?: boolean;
+  onToggleShowIgnored?: () => void;
   searchQuery: string;
   onSearchQueryChange: (query: string) => void;
   // Toolbar actions
@@ -26,10 +42,12 @@ type FileTreeHeaderProps = {
   uploadProgress?: number | null;
 };
 
-/** Rendered by FileTree to host the search box, view-mode switch and the create/upload/refresh/collapse actions. */
+/** Rendered by FileTree to host the search box, view-mode switch, ignored-files toggle and the create/upload/refresh/collapse actions. */
 export default function FileTreeHeader({
   viewMode,
   onViewModeChange,
+  showIgnored = false,
+  onToggleShowIgnored,
   searchQuery,
   onSearchQueryChange,
   onNewFile,
@@ -157,6 +175,25 @@ export default function FileTreeHeader({
           )}
           {/* Divider */}
           <div className="mx-0.5 h-4 w-px bg-border" />
+          {/* Ignored-files toggle: pressed styling matches the active view mode */}
+          {onToggleShowIgnored && (
+            <>
+              <Button
+                variant={showIgnored ? 'default' : 'ghost'}
+                size="sm"
+                className="h-7 w-7 p-0"
+                onClick={onToggleShowIgnored}
+                title={showIgnored
+                  ? t('fileTree.hideIgnored', 'Hide git-ignored files')
+                  : t('fileTree.showIgnored', 'Show git-ignored files')}
+                aria-label={t('fileTree.showIgnored', 'Show git-ignored files')}
+                aria-pressed={showIgnored}
+              >
+                <FolderGit2 className="h-3.5 w-3.5" />
+              </Button>
+              <div className="mx-0.5 h-4 w-px bg-border" />
+            </>
+          )}
           {/* View mode buttons */}
           <Button
             variant={viewMode === 'simple' ? 'default' : 'ghost'}

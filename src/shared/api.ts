@@ -270,8 +270,14 @@ export const api = {
     get(fileContentPath(projectId, filePath), options),
   saveFile: (projectId: string, filePath: string, content: string) =>
     put(`/api/file-tree/projects/${projectId}/file`, { filePath, content }),
-  getFiles: (projectId: string, options: ApiRequestOptions = {}) =>
-    get(`/api/file-tree/projects/${projectId}/files${query({ respectGitignore: true })}`, options),
+  // `includeIgnored` also lists what .gitignore hides, flagged with `isIgnored`;
+  // only the file tree asks for it, so mentions and search keep the lean listing.
+  getFiles: (
+    projectId: string,
+    options: ApiRequestOptions = {},
+    { includeIgnored = false }: { includeIgnored?: boolean } = {},
+  ) =>
+    get(`/api/file-tree/projects/${projectId}/files${query({ respectGitignore: true, includeIgnored })}`, options),
 
   // File operations
   createFile: (

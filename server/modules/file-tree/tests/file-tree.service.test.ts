@@ -205,6 +205,86 @@ test('listProjectFiles excludes gitignored entries only when requested', async (
   assert.equal(readDirectories.includes(cacheDirectory), false);
 });
 
+test('listProjectFiles includes and flags gitignored entries when includeIgnored is set', async () => {
+  const projectRoot = path.resolve('file-tree-test-project');
+  const cacheDirectory = path.join(projectRoot, 'cache');
+  const sourceDirectory = path.join(projectRoot, 'src');
+  const nodeModulesDirectory = path.join(projectRoot, 'node_modules');
+  const readDirectories: string[] = [];
+  const fileSystem = createFakeFileSystem({
+    access: async () => undefined,
+    readTextFile: async () => ['*.log', '!keep.log', 'cache/', 'src/generated.ts'].join('\n'),
+    openDirectory: createDirectoryReader((directoryPath) => {
+      readDirectories.push(directoryPath);
+      if (directoryPath === projectRoot) {
+        return [
+          createDirectoryEntry('.gitignore', false),
+          createDirectoryEntry('cache', true),
+          createDirectoryEntry('ignored.log', false),
+          createDirectoryEntry('keep.log', false),
+          createDirectoryEntry('node_modules', true),
+          createDirectoryEntry('src', true),
+        ];
+      }
+      if (directoryPath === cacheDirectory) {
+        return [createDirectoryEntry('cached.txt', false)];
+      }
+      if (directoryPath === sourceDirectory) {
+        return [
+          createDirectoryEntry('generated.ts', false),
+          createDirectoryEntry('index.ts', false),
+        ];
+      }
+      return [];
+    }),
+    lstat: async (candidatePath) => createStats(
+      candidatePath === cacheDirectory || candidatePath === sourceDirectory,
+      0o644,
+    ),
+  });
+  const service = createFileTreeService(createDependencies(fileSystem, projectRoot));
+
+  const tree = await service.listProjectFiles('project-1', { respectGitignore: true, includeIgnored: true });
+  const ignoredByName = (nodes: typeof tree) => Object.fromEntries(
+    nodes.map((entry) => [entry.name, entry.isIgnored === true]),
+  );
+
+  // Hard exclusions stay out even when ignored entries are requested.
+  assert.deepEqual(tree.map((entry) => entry.name), ['cache', 'src', '.gitignore', 'ignored.log', 'keep.log']);
+  assert.equal(readDirectories.includes(nodeModulesDirectory), false);
+  assert.deepEqual(ignoredByName(tree), {
+    cache: true,
+    src: false,
+    '.gitignore': false,
+    'ignored.log': true,
+    'keep.log': false,
+  });
+  // A hidden directory hides its whole subtree.
+  assert.deepEqual(ignoredByName(tree[0]?.children ?? []), { 'cached.txt': true });
+  assert.deepEqual(ignoredByName(tree[1]?.children ?? []), { 'generated.ts': true, 'index.ts': false });
+});
+
+test('listProjectFiles flags fallback directory names as ignored when no gitignore exists', async () => {
+  const projectRoot = path.resolve('file-tree-test-project');
+  const fileSystem = createFakeFileSystem({
+    access: async () => undefined,
+    readTextFile: async () => {
+      throw Object.assign(new Error('missing'), { code: 'ENOENT' });
+    },
+    openDirectory: createDirectoryReader((directoryPath) => (
+      directoryPath === projectRoot
+        ? [createDirectoryEntry('dist', true), createDirectoryEntry('src', true)]
+        : []
+    )),
+    lstat: async () => createStats(true, 0o755),
+  });
+  const service = createFileTreeService(createDependencies(fileSystem, projectRoot));
+
+  const tree = await service.listProjectFiles('project-1', { respectGitignore: true, includeIgnored: true });
+
+  assert.deepEqual(tree.map((entry) => [entry.name, entry.isIgnored === true]), [['dist', true], ['src', false]]);
+});
+
 test('listProjectFiles falls back to conventional directory names when no gitignore exists', async () => {
   const projectRoot = path.resolve('file-tree-test-project');
   const documentationDirectory = path.join(projectRoot, 'docs');

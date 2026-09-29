@@ -121,6 +121,8 @@
     "newFolder": "Neuer Ordner (Cmd+Shift+N)",
     "refresh": "Aktualisieren",
     "collapseAll": "Alle einklappen",
+    "showIgnored": "Von Git ignorierte Dateien anzeigen",
+    "hideIgnored": "Von Git ignorierte Dateien ausblenden",
     "context": {
       "rename": "Umbenennen",
       "delete": "Löschen",

@@ -124,6 +124,9 @@ export default function FileTreeNode({
     (isDirectory && !isOpen) || !isDirectory ? 'border-l-2 border-transparent' : '',
     'relative',
     isDropTarget && 'bg-blue-500/10 ring-1 ring-inset ring-blue-500/40',
+    // Git-ignored entries (listed only when the header toggle is on) read as
+    // de-emphasized, the way editors grey out ignored files.
+    item.isIgnored && 'opacity-50 hover:opacity-80',
   );
 
   // Render rename input if this item is being renamed

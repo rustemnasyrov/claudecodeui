@@ -168,6 +168,46 @@ function createGitignoreEntryFilter(
 }
 
 /**
+ * Builds the predicate that says whether the default listing would hide an
+ * entry: `.gitignore` rules when the project has one, otherwise the fallback
+ * directory names. Hard exclusions are not considered; they are never listed.
+ */
+function createDefaultHiddenMatcher(
+  projectRoot: string,
+  gitignoreContent: string | null,
+): (entryPath: string, isDirectory: boolean) => boolean {
+  if (gitignoreContent === null) {
+    return (entryPath, isDirectory) => isDirectory && IGNORED_DIRECTORY_NAMES.has(path.basename(entryPath));
+  }
+
+  const gitignore = ignore().add(gitignoreContent);
+  return (entryPath, isDirectory) => {
+    const relativePath = path.relative(projectRoot, entryPath).split(path.sep).join('/');
+    return gitignore.ignores(isDirectory ? `${relativePath}/` : relativePath);
+  };
+}
+
+/**
+ * Flags every node the default listing would hide. Descendants of a hidden
+ * directory are flagged too, since hiding the directory hides its whole subtree.
+ */
+function markIgnoredEntries(
+  nodes: FileTreeNode[],
+  isHiddenByDefault: (entryPath: string, isDirectory: boolean) => boolean,
+  parentIgnored = false,
+): void {
+  for (const node of nodes) {
+    const isIgnored = parentIgnored || isHiddenByDefault(node.path, node.type === 'directory');
+    if (isIgnored) {
+      node.isIgnored = true;
+    }
+    if (node.children) {
+      markIgnoredEntries(node.children, isHiddenByDefault, isIgnored);
+    }
+  }
+}
+
+/**
  * Creates File Tree workflows for the module composition root and route tests.
  * Every filesystem, project, workspace, environment, and logging dependency is
  * required explicitly so this service has no machine-wide production defaults.
@@ -501,15 +541,31 @@ export function createFileTreeService(dependencies: FileTreeServiceDependencies)
         throw createFileTreeError(`Project path not found: ${projectRoot}`, 404, 'PROJECT_PATH_NOT_FOUND');
       }
 
-      let includeEntry: FileTreeEntryFilter | undefined;
-      if (options?.respectGitignore) {
+      const readGitignore = async (): Promise<string | null> => {
         try {
-          const gitignoreContent = await fileSystem.readTextFile(path.join(projectRoot, '.gitignore'));
-          includeEntry = createGitignoreEntryFilter(projectRoot, gitignoreContent);
+          return await fileSystem.readTextFile(path.join(projectRoot, '.gitignore'));
         } catch (error) {
           if (readErrorCode(error) !== 'ENOENT') {
             dependencies.logger.error(`Error reading .gitignore in "${projectRoot}"`, error);
           }
+          return null;
+        }
+      };
+
+      if (options?.includeIgnored) {
+        // Everything but the hard exclusions is listed; what the default listing
+        // would hide is flagged so the client can show it de-emphasized.
+        const isHiddenByDefault = createDefaultHiddenMatcher(projectRoot, await readGitignore());
+        const tree = await buildFileTree(projectRoot, 10, 0, includeEntryByHardExclusions);
+        markIgnoredEntries(tree, isHiddenByDefault);
+        return tree;
+      }
+
+      let includeEntry: FileTreeEntryFilter | undefined;
+      if (options?.respectGitignore) {
+        const gitignoreContent = await readGitignore();
+        if (gitignoreContent !== null) {
+          includeEntry = createGitignoreEntryFilter(projectRoot, gitignoreContent);
         }
       }
 

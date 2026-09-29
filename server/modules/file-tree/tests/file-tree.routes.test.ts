@@ -72,7 +72,7 @@ test('project files route uses the File Tree API namespace and forwards the proj
     assert.deepEqual(await response.json(), []);
   });
 
-  assert.deepEqual(inputs, [['project-1', { respectGitignore: false }]]);
+  assert.deepEqual(inputs, [['project-1', { respectGitignore: false, includeIgnored: false }]]);
 });
 
 test('project files route requests gitignore filtering when explicitly enabled', async () => {
@@ -92,7 +92,27 @@ test('project files route requests gitignore filtering when explicitly enabled',
     assert.equal(response.status, 200);
   });
 
-  assert.deepEqual(inputs, [['project-1', { respectGitignore: true }]]);
+  assert.deepEqual(inputs, [['project-1', { respectGitignore: true, includeIgnored: false }]]);
+});
+
+test('project files route forwards the include-ignored listing flag', async () => {
+  const inputs: Parameters<FileTreeServices['listProjectFiles']>[] = [];
+  const services = createFakeServices({
+    listProjectFiles: async (...input) => {
+      inputs.push(input);
+      return [];
+    },
+  });
+
+  await withFileTreeServer(services, async (baseUrl) => {
+    const response = await fetch(
+      `${baseUrl}/api/file-tree/projects/project-1/files?respectGitignore=true&includeIgnored=true`,
+    );
+
+    assert.equal(response.status, 200);
+  });
+
+  assert.deepEqual(inputs, [['project-1', { respectGitignore: true, includeIgnored: true }]]);
 });
 
 test('create route parses the transport payload before invoking the service', async () => {
